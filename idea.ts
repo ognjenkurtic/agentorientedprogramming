@@ -1,12 +1,12 @@
 
 // Framework
 
-interface IQueue {
+interface IOrchestrator {
     addEvent(event: TheEvent): void;
     addSubscription(agent: Agent, event: TheEvent): boolean;
 }
 
-class TheQueue implements IQueue { // TODO: ATM just used to trigger subscribed agents, could be extended to a real queue if need arises
+class Orchestrator implements IOrchestrator { // TODO: ATM just used to trigger subscribed agents, could be extended to a real queue if need arises
     subscriptions: Subscription[]; 
     
     addEvent(event: TheEvent): void { 
@@ -15,7 +15,7 @@ class TheQueue implements IQueue { // TODO: ATM just used to trigger subscribed 
             .forEach(s => { 
                 const followUp = s.agent.processEvent(event);
                 
-                if (followUp) {
+                if (followUp) { // Consider better approach (i.e. part of job?)
                     this.addEvent(followUp);
                 };
             });
@@ -28,17 +28,17 @@ class TheQueue implements IQueue { // TODO: ATM just used to trigger subscribed 
 }
 
 abstract class Agent {
-    _queue: IQueue;
+    _orchestrator: IOrchestrator;
     _listensFor: TheEvent[];
     _unitOfWork: UnitOfWork;
     
-    constructor(queue: IQueue, events: TheEvent[], unitOfWork: UnitOfWork) {
-        this._queue = queue;
+    constructor(orchestrator: IOrchestrator, events: TheEvent[], unitOfWork: UnitOfWork) {
+        this._orchestrator = orchestrator;
         this._listensFor = events;
         this._unitOfWork = unitOfWork;
 
         events.forEach(ev => {
-            this._queue.addSubscription(this, ev);
+            this._orchestrator.addSubscription(this, ev);
         });
     }
 
@@ -181,7 +181,7 @@ class InvoicingAgent extends Agent { // Agent represents a person\machine which 
     }
 
     private processInvoiceValidation(event: TheEvent): boolean {
-        return true;
+        return true; // These are the only place where business logic happens
     }
 
     private updateInvoiceStatus(event: TheEvent): boolean {
@@ -203,7 +203,7 @@ class CreditLimitsAgent extends Agent {
         {
             this.processLimitsUpdate(event); 
             this._unitOfWork.commmit(); // TODO: To we need a separate agent for finalization of the job (i.e. agent for database updates)
-            // TODO: Who is downstream?
+            // TODO: Who is downstream from the last event in a job?
         }
 
         return followUpEvent;
@@ -234,3 +234,15 @@ class AccountingAgent extends Agent {
         return true;
     }
 }
+
+// the program
+
+class Program {
+    run(): void {
+        const orchestrator = new Orchestrator();
+        const unitOfWork = new UnitOfWork();
+        // TODO: Register agents
+        // TODO: Trigger financing
+    }
+}
+
