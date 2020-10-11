@@ -7,12 +7,14 @@ interface IOrchestrator {
 }
 
 class Orchestrator implements IOrchestrator { // TODO: ATM just used to trigger subscribed agents, could be extended to a real queue if need arises
-    subscriptions: Subscription[]; 
+    subscriptions: Subscription[] = []; 
     
-    addEvent(event: TheEvent): void { 
+    addEvent(event: TheEvent): void {
+        console.log("New event received:" + JSON.stringify(event));
         this.subscriptions
             .filter(s => s.eventType === event.type) // TODO: check class type equality
-            .forEach(s => { 
+            .forEach(s => {
+                console.log("Triggering agent:" + typeof s.agent);
                 const followUp = s.agent.processEvent(event);
                 
                 if (followUp) { // Consider better approach (i.e. part of job?)
@@ -251,4 +253,7 @@ class Program {
         orchestrator.addEvent({ type: EVENT_FIN_REQUESTED, payload: "{ \"invoiceId\": 1 }" });
     }
 }
+
+const program = new Program();
+program.run();
 
