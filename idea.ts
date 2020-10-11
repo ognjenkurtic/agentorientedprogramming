@@ -3,7 +3,7 @@
 
 interface IOrchestrator {
     addEvent(event: TheEvent): void;
-    addSubscription(agent: Agent, event: TheEvent): boolean;
+    addSubscription(agent: Agent, eventType: string): boolean;
 }
 
 class Orchestrator implements IOrchestrator { // TODO: ATM just used to trigger subscribed agents, could be extended to a real queue if need arises
@@ -11,7 +11,7 @@ class Orchestrator implements IOrchestrator { // TODO: ATM just used to trigger 
     
     addEvent(event: TheEvent): void { 
         this.subscriptions
-            .filter(s => s.event.type === event.type) // TODO: check class type equality
+            .filter(s => s.eventType === event.type) // TODO: check class type equality
             .forEach(s => { 
                 const followUp = s.agent.processEvent(event);
                 
@@ -21,18 +21,18 @@ class Orchestrator implements IOrchestrator { // TODO: ATM just used to trigger 
             });
     }
     
-    addSubscription(agent: Agent, event: TheEvent): boolean {
-        this.subscriptions.push( { agent, event} as Subscription);
+    addSubscription(agent: Agent, eventType: string): boolean {
+        this.subscriptions.push( { agent, eventType} as Subscription);
         return true;
     }
 }
 
 abstract class Agent {
     _orchestrator: IOrchestrator;
-    _listensFor: TheEvent[];
+    _listensFor: string[];
     _unitOfWork: UnitOfWork;
     
-    constructor(orchestrator: IOrchestrator, events: TheEvent[], unitOfWork: UnitOfWork) {
+    constructor(orchestrator: IOrchestrator, events: string[], unitOfWork: UnitOfWork) {
         this._orchestrator = orchestrator;
         this._listensFor = events;
         this._unitOfWork = unitOfWork;
@@ -51,7 +51,7 @@ class TheEvent {
 }
 
 class Subscription {
-    event: TheEvent;
+    eventType: string;
     agent: Agent;
 }
 
@@ -241,8 +241,14 @@ class Program {
     run(): void {
         const orchestrator = new Orchestrator();
         const unitOfWork = new UnitOfWork();
-        // TODO: Register agents
-        // TODO: Trigger financing
+
+        // TODO: These will be provided through dependency injection and events\jobs could be defined in their ctor instead
+        const invoicingAgent = new InvoicingAgent(orchestrator, [ EVENT_FIN_REQUESTED, EVENT_ERP_DOC_CREATED ], unitOfWork);
+        const creditLimitsAgent = new CreditLimitsAgent(orchestrator, [ EVENT_INV_VALIDATED, EVENT_INV_UPDATED ], unitOfWork);
+        const accountingAgent = new AccountingAgent(orchestrator, [ EVENT_LIMITS_VALIDATED ], unitOfWork);
+
+        // Start // TODO: This would be done in the controller for example, after an endpoint is hit
+        orchestrator.addEvent({ type: EVENT_FIN_REQUESTED, payload: "{ \"invoiceId\": 1 }" });
     }
 }
 
