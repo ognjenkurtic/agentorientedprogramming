@@ -8,4 +8,6 @@ Trying to replicate real-world business transaction processing with software.
 
 The orchestration of the job is performed by the framework (i.e. IOrchestrator) so that every agent thinks only about how to perform it's task and what information to pass further. 
 
-During program startup agents with their specific events are registered with the orchestrator. These job descriptions (chain of events) together with the agents fully describe the functionality of the program. 
+Option 1: During program startup agents with their specific events are registered with the orchestrator. These job descriptions (chain of events) together with the agents fully describe the functionality of the program. 
+
+Option 2: Job descriptions are stored in the Job classes, utilizing the mediator pattern. No need for the orchestrator. 
